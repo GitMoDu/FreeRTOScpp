@@ -38,8 +38,7 @@
 #ifndef TaskCPP_H
 #define TaskCPP_H
 
-#include "FreeRTOS.h"
-#include "task.h"
+#include <MapleFreeRTOS900.h>
 
 /**
  * @brief Names for Base set of Priorities.
