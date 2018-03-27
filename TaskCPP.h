@@ -55,15 +55,6 @@
  *| TaskPrio_High		| 0 | 1 | 2 | 3 | 3 | 4 | N - 2 | Urgent, Short Deadlines, not much processing			|
  *| TaskPrio_Highest		| 0 | 1 | 2 | 3 | 4 | 5 | N - 1 | Critical, do NOW, must be quick(Used by FreeRTOS)		|
  */
-enum ProcPriority
-{
-	HIGHEST_PRIORITY = ((configMAX_PRIORITIES)-1),
-	HIGH_PRIORITY = ((configMAX_PRIORITIES)-1 - ((configMAX_PRIORITIES) > 4)),
-	MEDIUM_PRIORITY = ((configMAX_PRIORITIES) / 2),
-	LOW_PRIORITY = ((configMAX_PRIORITIES) > 1),									///< Non-Critical operations
-	IDLE_PRIORITY = 0,															///< Non-Real Time operations. tasks that don't block
-	NUM_PRIORITY_LEVELS
-};
 
 class TaskCPP
 {
