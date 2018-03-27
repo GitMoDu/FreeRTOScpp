@@ -7,6 +7,7 @@
 
 #include <Process.h>
 
+#include <taskCPP.h>
 
 class DebugProcess : public Process
 {
@@ -16,7 +17,7 @@ public:
 	{
 	}
 
-	DebugProcess(const char * const taskName, UBaseType_t priority, uint32_t period)
+	DebugProcess(const char * const taskName, ProcPriority priority, uint32_t period)
 		:Process(taskName, priority, period)
 	{
 	}
@@ -50,8 +51,8 @@ protected:
 	}
 };
 
-DebugProcess TestA = DebugProcess("Task A", tskIDLE_PRIORITY + 3, 1000);
-DebugProcess TestB = DebugProcess("Task B", tskIDLE_PRIORITY + 5, 2000);
+DebugProcess TestA = DebugProcess("Task A", MEDIUM_PRIORITY, 1000);
+DebugProcess TestB = DebugProcess("Task B", LOW_PRIORITY, 2000);
 
 
 void TestTask(void* pvParameters)
