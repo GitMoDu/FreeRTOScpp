@@ -1,12 +1,8 @@
 /*
-* Example 01: Ex_01_SayHello.ino
-* By: D. Aaron Wisner
-*
-* In this example we are creating a "SayHelloProcess" Class that prints "Hello from Process: 'id'" at a constant period
+
 */
 
 #include <Process.h>
-
 #include <taskCPP.h>
 
 class DebugProcess : public Process
