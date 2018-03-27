@@ -46,13 +46,13 @@
 #include <MapleFreeRTOS900.h>
 
  /*
- *| configMAX_PRIORITIES:| 1 | 2 | 3 | 4 | 5 | 6 | N>6	| Use |
- *| --------------------:| - | - | - | - | - | - | - : -	| : ------------------------------------------------- : |
- *| TaskPrio_Idle		| 0 | 0 | 0 | 0 | 0 | 0 |	0	| Non - Real Time operations, Tasks that don't block	|
+ *| configMAX_PRIORITIES:	| 1 | 2 | 3 | 4 | 5 | 6 | N>6	| Use |
+ *| --------------------:	| - | - | - | - | - | - | - : -	| : ------------------------------------------------- : |
+ *| TaskPrio_Idle			| 0 | 0 | 0 | 0 | 0 | 0 |	0	| Non - Real Time operations, Tasks that don't block	|
  *| TaskPrio_Low			| 0 | 1 | 1 | 1 | 1 | 1 |	1	| Non - Critical operations								|
  *| TaskPrio_HMI			| 0 | 1 | 1 | 1 | 1 | 2 |	2	| Normal User Interface									|
  *| TaskPrio_Mid			| 0 | 1 | 1 | 2 | 2 | 3 | N / 2 | Semi - Critical, Deadlines, not much processing		|
- *| TaskPrio_High		| 0 | 1 | 2 | 3 | 3 | 4 | N - 2 | Urgent, Short Deadlines, not much processing			|
+ *| TaskPrio_High			| 0 | 1 | 2 | 3 | 3 | 4 | N - 2 | Urgent, Short Deadlines, not much processing			|
  *| TaskPrio_Highest		| 0 | 1 | 2 | 3 | 4 | 5 | N - 1 | Critical, do NOW, must be quick(Used by FreeRTOS)		|
  */
 
@@ -99,7 +99,6 @@ public:
 		while (1)
 			vTaskDelay(portMAX_DELAY);
 #endif
-
 		
 	}
 
