@@ -120,6 +120,7 @@ public:
 
 	void add(bool enableIfNot = true)
 	{
+		Start();
 		if (enableIfNot)
 		{
 			PendingAction = RequestAction::Enable;
@@ -127,8 +128,9 @@ public:
 		else
 		{
 			PendingAction = RequestAction::Disable;
+			Pause();
 		}
-		Start();
+		
 	}
 
 	void enable()
