@@ -145,7 +145,11 @@ public:
 
 	void Resume()
 	{
-		if (IsAlive() && Suspended)
+		if (!Alive)
+		{
+			Start();
+		}
+		else if (IsAlive() && Suspended)
 		{
 			OnResume();
 			vTaskResume(TaskHandle);
