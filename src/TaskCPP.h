@@ -34,6 +34,11 @@
  * @ingroup FreeRTOSCpp
  *
  * @defgroup FreeRTOSCpp Free RTOS C++ Wrapper
+ *
+ *
+ *
+ * Modifed by GitModu
+ *
  */
 #ifndef TaskCPP_H
 #define TaskCPP_H
@@ -58,10 +63,10 @@
 
 enum TaskPriority {
 	TaskPrio_Idle = 0,                                                    ///< Non-Real Time operations. tasks that don't block
-	TaskPrio_Low = ((configMAX_PRIORITIES)>1),                             ///< Non-Critical operations
-	TaskPrio_HMI = (TaskPrio_Low + ((configMAX_PRIORITIES)>5)),            ///< Normal User Interface Level
+	TaskPrio_Low = ((configMAX_PRIORITIES) > 1),                             ///< Non-Critical operations
+	TaskPrio_HMI = (TaskPrio_Low + ((configMAX_PRIORITIES) > 5)),            ///< Normal User Interface Level
 	TaskPrio_Mid = ((configMAX_PRIORITIES) / 2),                            ///< Semi-Critical, have deadlines, not a lot of processing
-	TaskPrio_High = ((configMAX_PRIORITIES)-1 - ((configMAX_PRIORITIES)>4)), ///< Urgent tasks, short deadlines, not much processing
+	TaskPrio_High = ((configMAX_PRIORITIES)-1 - ((configMAX_PRIORITIES) > 4)), ///< Urgent tasks, short deadlines, not much processing
 	TaskPrio_Highest = ((configMAX_PRIORITIES)-1)                         ///< Critical Tasks, Do NOW, must be quick (Used by FreeRTOS)
 };
 
@@ -69,22 +74,30 @@ enum TaskPriority {
 class TaskCPP
 {
 private:
-	bool Alive = false;
-	bool Suspended = false;
+private:
+	enum TaskStateEnum
+	{
+		Dead,
+		Alive,
+		Suspended
+	} TaskState;
+
 	const char * TaskName;
 	UBaseType_t Priority = tskIDLE_PRIORITY;
-	TaskHandle_t TaskHandle;
+	TaskHandle_t TaskHandle = NULL;
 
 public:
 	TaskCPP(UBaseType_t priority)
 	{
 		TaskName = "X";
+		TaskHandle = NULL;
 	}
 
 	TaskCPP(const char * const taskName, UBaseType_t priority)
 	{
 		TaskName = taskName;
 		Priority = priority;
+		TaskHandle = NULL;
 	}
 
 	UBaseType_t GetPriority()
@@ -97,19 +110,20 @@ public:
 		return pcTaskGetTaskName(TaskHandle);
 	}
 
+	uint16_t GetStackSize()
+	{
+#if INCLUDE_uxTaskGetStackHighWaterMark
+		return uxTaskGetStackHighWaterMark(TaskHandle);
+#else
+		return 0;
+#endif		
+	}
+
 	void Run()
 	{
 		OnRun();
-		OnDestroy();
 		// If we get here, task has returned, delete ourselves or block indefinitely.
-#if INCLUDE_vTaskDelete
-		TaskHandle = 0;
-		vTaskDelete(TaskHandle);
-#else
-		while (1)
-			vTaskDelay(portMAX_DELAY);
-#endif
-		
+		Stop();
 	}
 
 	void Delay(const uint32_t period)
@@ -119,58 +133,137 @@ public:
 
 	bool IsAlive()
 	{
-		return Alive;
+		return TaskState == TaskStateEnum::Alive || TaskState == TaskStateEnum::Suspended;
+	}
+
+	void Debug(Stream * serial)
+	{
+		serial->print("TaskState: ");
+		switch (TaskState)
+		{
+		case TaskStateEnum::Dead:
+			serial->println("Dead");
+			break;
+		case TaskStateEnum::Alive:
+			serial->println("Alive");
+			break;
+		case TaskStateEnum::Suspended:
+			serial->println("Suspended");
+			break;
+		default:
+			serial->println("Unknown");
+			break;
+		}
+	}
+
+	bool IsSuspended()
+	{
+		return TaskState == TaskStateEnum::Suspended;
 	}
 
 	void Start()
 	{
-		if (!Alive)
+		switch (TaskState)
 		{
-			Alive = true;
+		case TaskStateEnum::Dead:
+			TaskState = TaskStateEnum::Alive;
+			OnStart();
 			xTaskCreate(StaticTask, TaskName,
 				TASK_CPP_STACK_DEPTH,
 				this, Priority,
 				&TaskHandle);
+			break;
+		case TaskStateEnum::Suspended:
+			TaskState = TaskStateEnum::Alive;
+			OnResume();
+			vTaskResume(TaskHandle);
+			break;
+		case TaskStateEnum::Alive:
+		default:
+			break;
 		}
 	}
 
 	void Pause()
 	{
-		if (IsAlive() && !Suspended)
+		switch (TaskState)
 		{
-			Suspended = true;
+		case TaskStateEnum::Alive:
+			TaskState = TaskStateEnum::Suspended;
+			OnSuspend();
 			vTaskSuspend(TaskHandle);
+			break;
+		case TaskStateEnum::Suspended:
+		case TaskStateEnum::Dead:
+		default:
+			break;
 		}
+	}
+
+	void AbortDelay()
+	{
+#if INCLUDE_xTaskAbortDelay
+		xTaskAbortDelay(TaskHandle);
+#endif
 	}
 
 	void Resume()
 	{
-		if (!Alive)
+		switch (TaskState)
 		{
+		case TaskStateEnum::Dead:
+#if INCLUDE_vTaskDelete
 			Start();
-		}
-		else if (IsAlive() && Suspended)
-		{
+#else
+			if (TaskHandle != NULL)
+			{
+				AbortDelay();//If have no task delete and we still have a TaskHandle, that means the task is locked in sleep.
+			}
+			else
+			{
+				Start();
+			}
+#endif
+		case TaskStateEnum::Suspended:
+			TaskState = TaskStateEnum::Alive;
 			OnResume();
 			vTaskResume(TaskHandle);
-			Suspended = false;
+			break;
+		case TaskStateEnum::Alive:
+		default:
+			break;
 		}
 	}
 
 	void Stop()
 	{
-		if (Alive)
+		switch (TaskState)
 		{
-			OnStop();
+		case TaskStateEnum::Suspended:
+			vTaskResume(TaskHandle);
+		case TaskStateEnum::Alive:
+			TaskState = TaskStateEnum::Dead;
+			OnDestroy();
+#if INCLUDE_vTaskDelete
+			vTaskDelete(TaskHandle);
+			TaskHandle = NULL;
+#else
+			while (1)
+				vTaskDelay(portMAX_DELAY);
+#endif
+			break;
+		case TaskStateEnum::Dead:
+		default:
+			break;
 		}
-		Alive = false;
 	}
 
 protected:
+	virtual void OnStart() {}
 	virtual void OnRun() {}
 	virtual void OnResume() {}
-	virtual void OnStop() {}
 	virtual void OnDestroy() {}
+	virtual void OnSuspend() {}
 
 private:
 	//Static trap escape method. 
