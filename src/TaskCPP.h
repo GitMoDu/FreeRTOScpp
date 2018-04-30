@@ -168,10 +168,24 @@ public:
 		case TaskStateEnum::Dead:
 			TaskState = TaskStateEnum::Alive;
 			OnStart();
+#if INCLUDE_vTaskDelete
 			xTaskCreate(StaticTask, TaskName,
 				TASK_CPP_STACK_DEPTH,
 				this, Priority,
 				&TaskHandle);
+#else
+			if (TaskHandle == NULL)
+			{
+				xTaskCreate(StaticTask, TaskName,
+					TASK_CPP_STACK_DEPTH,
+					this, Priority,
+					&TaskHandle);				
+			}
+			else
+			{
+				//If have no task delete and we still have a TaskHandle, that means the task is locked in sleep.
+			}
+#endif			
 			break;
 		case TaskStateEnum::Suspended:
 			TaskState = TaskStateEnum::Alive;
@@ -212,18 +226,7 @@ public:
 		switch (TaskState)
 		{
 		case TaskStateEnum::Dead:
-#if INCLUDE_vTaskDelete
 			Start();
-#else
-			if (TaskHandle != NULL)
-			{
-				AbortDelay();//If have no task delete and we still have a TaskHandle, that means the task is locked in sleep.
-			}
-			else
-			{
-				Start();
-			}
-#endif
 		case TaskStateEnum::Suspended:
 			TaskState = TaskStateEnum::Alive;
 			OnResume();
@@ -246,9 +249,8 @@ public:
 			OnDestroy();
 #if INCLUDE_vTaskDelete
 			vTaskDelete(TaskHandle);
-			TaskHandle = NULL;
 #else
-			while (1)
+			while (TaskHandle != NULL)
 				vTaskDelay(portMAX_DELAY);
 #endif
 			break;
